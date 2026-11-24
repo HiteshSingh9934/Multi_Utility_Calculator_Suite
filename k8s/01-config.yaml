@@ -1,0 +1,26 @@
+# Settings shared by the services (ConfigMap) and the database login (Secret).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: calc-suite
+data:
+  HISTORY_URL: "http://history-service:5000"
+  REDIS_URL: "redis://cache:6379/0"
+  DB_HOST: "db"
+  DB_PORT: "5432"
+  # The Chaos lab on the Overview page can crash or break a pod on purpose. Set "false" to switch it off.
+  CHAOS_ENABLED: "true"
+  DB_NAME: "calculator"
+  # The gateway's Nginx looks services up by full name: calc-service.calc-suite.svc.cluster.local
+  DNS_SUFFIX: ".calc-suite.svc.cluster.local"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: db-credentials
+  namespace: calc-suite
+type: Opaque
+stringData:          # Kubernetes stores these base64-encoded
+  DB_USER: calc_user
+  DB_PASSWORD: calc_password

@@ -1,0 +1,23 @@
+# Argo CD Application: keeps the cluster equal to what is in Git (GitOps).
+# Install Argo CD once, then:   kubectl apply -f deploy/argocd/application.yaml
+# Replace the repoURL with the address of your own repository.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: calculator-suite
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/OWNER/REPOSITORY.git
+    targetRevision: main
+    path: deploy/overlays/ghcr
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: calc-suite
+  syncPolicy:
+    automated:
+      prune: true        # delete what is no longer in Git
+      selfHeal: true     # undo changes made by hand in the cluster
+    syncOptions:
+      - CreateNamespace=true

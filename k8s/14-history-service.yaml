@@ -1,0 +1,65 @@
+# history-service: saves every result in PostgreSQL (readiness also checks the database)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: history-service
+  namespace: calc-suite
+  labels:
+    app: history-service
+    app.kubernetes.io/part-of: calculator-suite
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: history-service
+  template:
+    metadata:
+      labels:
+        app: history-service
+        app.kubernetes.io/part-of: calculator-suite
+    spec:
+      enableServiceLinks: false   # no automatic SERVICE_PORT=tcp://... variables; config comes from app-config
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+      containers:
+        - name: history-service
+          image: calculator-app/history-service:3.2
+          imagePullPolicy: Never          # use the image built locally by "docker compose build"
+          ports:
+            - name: http
+              containerPort: 5000
+          envFrom:
+            - configMapRef:
+                name: app-config
+            - secretRef:
+                name: db-credentials
+          readinessProbe:                 # only send traffic once this answers
+            httpGet: {path: /ready, port: http}
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:                  # restart the container if this stops answering
+            httpGet: {path: /health, port: http}
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {cpu: 500m, memory: 256Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: history-service
+  namespace: calc-suite
+  labels:
+    app: history-service
+spec:
+  selector:
+    app: history-service
+  ports:
+    - name: http
+      port: 5000
+      targetPort: http

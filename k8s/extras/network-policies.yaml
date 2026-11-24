@@ -1,0 +1,42 @@
+# Optional: the same separation as the private Docker networks in docker-compose.yml.
+#   - only history-service may connect to PostgreSQL
+#   - only math-service may connect to Redis
+# Kubernetes only enforces NetworkPolicies when the cluster's network plugin supports them
+# (Calico or Cilium do; Docker Desktop's built-in network doesn't, so there they change nothing).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: db-only-from-history-service
+  namespace: calc-suite
+spec:
+  podSelector:
+    matchLabels:
+      app: db
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: history-service
+      ports:
+        - port: 5432
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: cache-only-from-math-service
+  namespace: calc-suite
+spec:
+  podSelector:
+    matchLabels:
+      app: cache
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: math-service
+      ports:
+        - port: 6379
+          protocol: TCP

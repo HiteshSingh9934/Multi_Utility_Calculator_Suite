@@ -1,0 +1,36 @@
+# Prometheus: collects numbers from every microservice's /metrics page every 10 seconds.
+# Start it with:  docker compose --profile monitoring up -d     (then open http://localhost:9090)
+
+global:
+  scrape_interval: 10s
+  evaluation_interval: 10s
+
+scrape_configs:
+  # The eight Python microservices. Docker's DNS returns one address per running container,
+  # so after "docker compose up -d --scale calc-service=3" all three copies are collected.
+  - job_name: calculator-services
+    metrics_path: /metrics
+    dns_sd_configs:
+      - names:
+          - calc-service
+          - converter-service
+          - finance-service
+          - student-service
+          - math-service
+          - matrix-service
+          - solver-service
+          - history-service
+        type: A
+        port: 5000
+        refresh_interval: 15s
+    # Label every target with its service name, so "up" can say which service is down.
+    # honor_labels: the services already label their own numbers with the same service name.
+    honor_labels: true
+    relabel_configs:
+      - source_labels: [__meta_dns_name]
+        target_label: service
+
+  # Prometheus watching itself
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

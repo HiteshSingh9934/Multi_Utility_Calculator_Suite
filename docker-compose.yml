@@ -1,0 +1,351 @@
+# Multi-Utility Calculator Suite: Docker Compose setup
+#
+#   docker compose up -d --build                      build the images and start the app
+#   http://localhost:8080                             open the app
+#   docker compose --profile monitoring up -d         also start Prometheus and Grafana (http://localhost:3000)
+#   docker compose watch                              rebuild or refresh containers as you edit the code
+#
+# Ports and the database name and user come from the .env file. The database password is a
+# Docker secret: it lives in secrets/db_password.txt, never in an environment variable.
+
+name: calculator-app   # same project name as versions 1 and 2, so the same volume (and your old history) is reused
+
+# Settings shared by the Python microservices (a YAML anchor, merged in below with <<:)
+x-python-service: &python-service
+  restart: unless-stopped
+  environment:
+    HISTORY_URL: http://history-service:5000
+    CHAOS_ENABLED: ${CHAOS_ENABLED:-true}   # lets the Chaos lab break a service on purpose (see README)
+  networks: [app]
+  deploy:
+    resources:
+      limits:
+        cpus: "0.50"
+        memory: 256M
+  logging: &logging
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+
+  # ---------------------------------------------------------------- gateway
+  # Nginx: serves the web page and routes /api/... to the right microservice.
+  # It is the only part of the app published on your computer.
+  gateway:
+    build: ./gateway
+    image: calculator-app/gateway:3.2
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:80"
+    depends_on:
+      - calc-service
+      - converter-service
+      - finance-service
+      - student-service
+      - math-service
+      - matrix-service
+      - solver-service
+      - history-service
+    networks: [app]
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 64M
+    logging: *logging
+    develop:
+      watch:
+        - action: sync                  # save a change to the web page, refresh the browser: no rebuild
+          path: ./gateway/html
+          target: /usr/share/nginx/html
+        - action: rebuild
+          path: ./gateway/default.conf.template
+
+  # ---------------------------------------------------------- microservices
+  calc-service:          # basic calculator (Task 4's sum service, upgraded)
+    <<: *python-service
+    build: ./services/calc-service
+    image: calculator-app/calc-service:3.2
+    develop:
+      watch:
+        - action: rebuild               # any change to this service's folder rebuilds and restarts it
+          path: ./services/calc-service
+
+  converter-service:     # unit converter, 10 categories
+    <<: *python-service
+    build: ./services/converter-service
+    image: calculator-app/converter-service:3.2
+    develop:
+      watch:
+        - action: rebuild
+          path: ./services/converter-service
+
+  finance-service:       # GST and EMI calculators
+    <<: *python-service
+    build: ./services/finance-service
+    image: calculator-app/finance-service:3.2
+    develop:
+      watch:
+        - action: rebuild
+          path: ./services/finance-service
+
+  student-service:       # CGPA, marks and grades, attendance
+    <<: *python-service
+    build: ./services/student-service
+    image: calculator-app/student-service:3.2
+    develop:
+      watch:
+        - action: rebuild
+          path: ./services/student-service
+
+  math-service:          # scientific calculator, graphs, 3D graphs, calculus, statistics, 3D shapes
+    <<: *python-service
+    build: ./services/math-service
+    image: calculator-app/math-service:3.2
+    environment:
+      HISTORY_URL: http://history-service:5000
+      REDIS_URL: redis://cache:6379/0
+      CACHE_TTL_SECONDS: "3600"      # a cached graph is kept for an hour
+      CHAOS_ENABLED: ${CHAOS_ENABLED:-true}
+    networks: [app, cache]
+    depends_on:
+      cache:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M                 # NumPy and SymPy need more room than the other services
+    develop:
+      watch:
+        - action: rebuild
+          path: ./services/math-service
+
+  matrix-service:        # matrices with exact fractions, 3D vectors
+    <<: *python-service
+    build: ./services/matrix-service
+    image: calculator-app/matrix-service:3.2
+    develop:
+      watch:
+        - action: rebuild
+          path: ./services/matrix-service
+
+  solver-service:        # worked solutions step by step, and questions in plain English
+    <<: *python-service
+    build: ./services/solver-service
+    image: calculator-app/solver-service:3.2
+    environment:
+      HISTORY_URL: http://history-service:5000
+      CHAOS_ENABLED: ${CHAOS_ENABLED:-true}
+      # /ask calls these by name (the defaults are http://<name>:5000, so nothing is needed here)
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M                 # SymPy needs room, like math-service
+    develop:
+      watch:
+        - action: rebuild
+          path: ./services/solver-service
+
+  history-service:       # the only service that talks to PostgreSQL
+    <<: *python-service
+    build: ./services/history-service
+    image: calculator-app/history-service:3.2
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME:-calculator}
+      DB_USER: ${DB_USER:-calc_user}
+      DB_PASSWORD_FILE: /run/secrets/db_password   # read from the Docker secret below
+      CHAOS_ENABLED: ${CHAOS_ENABLED:-true}
+    secrets: [db_password]
+    networks: [app, data]
+    depends_on:
+      db:
+        condition: service_healthy   # wait until PostgreSQL accepts connections, not just until it starts
+    develop:
+      watch:
+        - action: rebuild
+          path: ./services/history-service
+
+  # --------------------------------------------------------------- database
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-calculator}
+      POSTGRES_USER: ${DB_USER:-calc_user}
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets: [db_password]
+    volumes:
+      - db-data:/var/lib/postgresql/data   # named volume: the data outlives the container
+    networks: [data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    logging: *logging
+
+  # ------------------------------------------------------------------ cache
+  # Redis keeps finished graphs for an hour, so drawing the same graph again is instant.
+  cache:
+    image: redis:8.8-alpine
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --maxmemory
+      - 64mb
+      - --maxmemory-policy
+      - allkeys-lru          # when full, forget the graphs used least recently
+      - --save
+      - "60"
+      - "1"                  # write a snapshot to the volume each minute if anything changed
+      - --protected-mode
+      - "no"                 # accept connections from math-service (only it shares the cache network)
+    volumes:
+      - cache-data:/data     # a second named volume: cached graphs survive a restart
+    networks: [cache]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
+    logging: *logging
+
+  # ------------------------------------------------- optional extras (profiles)
+
+  # Monitoring:  docker compose --profile monitoring up -d
+  #   Prometheus  http://localhost:9090   collects numbers from every service's /metrics page
+  #   Grafana     http://localhost:3000   shows them as a dashboard (log in as admin / admin to edit)
+  prometheus:
+    image: prom/prometheus:v3.15.0
+    profiles: [monitoring]
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=7d
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro   # bind mount: the config from this folder
+      - prometheus-data:/prometheus                                     # named volume: the collected numbers
+    networks: [app]
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    logging: *logging
+
+  grafana:
+    image: grafana/grafana:12.4.8
+    profiles: [monitoring]
+    restart: unless-stopped
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"    # open the dashboard without logging in (read-only)
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/dashboards/calculator-suite.json
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_NEWS_NEWS_FEED_ENABLED: "false"
+    volumes:
+      - ./monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/dashboards:/etc/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    networks: [app]
+    depends_on: [prometheus]
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    logging: *logging
+
+  # Database browser:  docker compose --profile tools up -d   then open http://localhost:8081
+  adminer:
+    image: adminer:5
+    profiles: [tools]
+    restart: unless-stopped
+    ports:
+      - "${ADMINER_PORT:-8081}:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+    networks: [app, data]
+    depends_on: [db]
+
+  # Backup to the ./backups folder (bind mount):  docker compose run --rm db-backup
+  db-backup:
+    image: postgres:16-alpine
+    profiles: [backup]
+    environment:
+      PGHOST: db
+      PGDATABASE: ${DB_NAME:-calculator}
+      PGUSER: ${DB_USER:-calc_user}
+    secrets: [db_password]
+    volumes:
+      - ./backups:/backups
+    networks: [data]
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint: ["sh", "-c"]
+    command:
+      - >-
+        export PGPASSWORD="$$(tr -d '\r\n' < /run/secrets/db_password)" &&
+        file=calculator-$$(date +%Y%m%d-%H%M%S).sql &&
+        pg_dump --clean --if-exists --no-owner -f /backups/$$file &&
+        echo "Backup saved: backups/$$file"
+
+  # Tests:  docker compose --profile test run --rm unit-tests     (437 unit tests, no network needed)
+  #         docker compose --profile test run --rm smoke-test     (every tool, end to end, through the gateway)
+  unit-tests:
+    build:
+      context: ./tests
+      additional_contexts:
+        services: ./services      # the tests import each service's code
+    image: calculator-app/unit-tests:3.2
+    profiles: [test]
+    network_mode: none            # unit tests must not need the network
+
+  smoke-test:
+    image: calculator-app/calc-service:3.2   # reuses an image built above; it already has Python
+    profiles: [test]
+    pull_policy: never
+    command: ["python", "/tests/smoke_test.py", "http://gateway"]
+    volumes:
+      - ./tests:/tests:ro
+    networks: [app]
+    depends_on: [gateway]
+    healthcheck:
+      disable: true
+
+networks:
+  app:              # gateway + microservices (+ Prometheus and Grafana)
+  data:             # history-service + PostgreSQL only; the gateway can't reach the database
+    internal: true  # no route to the internet from this network
+  cache:            # math-service + Redis only
+    internal: true
+
+volumes:
+  db-data:          # appears as calculator-app_db-data in "docker volume ls"
+  cache-data:       # Redis snapshot of the cached graphs
+  prometheus-data:  # the numbers Prometheus has collected (kept for 7 days)
+  grafana-data:     # Grafana's own settings
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt   # mounted read-only at /run/secrets/db_password

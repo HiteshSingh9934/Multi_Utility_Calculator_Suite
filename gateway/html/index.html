@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#14171c">
+<script>
+  /* Apply the saved theme before anything is drawn, so the page never flashes the other one */
+  try { if (localStorage.getItem("theme") === "light") document.documentElement.dataset.theme = "light"; } catch (e) {}
+</script>
+<meta name="description" content="Fifteen calculators, graphs and 3D tools (scientific, 3D graphs, matrices, calculus, statistics, GST, EMI and student tools), running as Docker microservices.">
+<title>Calculator Suite</title>
+<link rel="preload" href="fonts/ibm-plex-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'%3E%3Crect x='2' y='2' width='11' height='11' rx='3' fill='%238b93a1'/%3E%3Crect x='15' y='2' width='11' height='11' rx='3' fill='%238b93a1'/%3E%3Crect x='2' y='15' width='11' height='11' rx='3' fill='%238b93a1'/%3E%3Crect x='15' y='15' width='11' height='11' rx='3' fill='%23f5a524'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+<script src="app.js" defer></script>
+<script src="math.js" defer></script>
+<script src="ui.js" defer></script>
+<script src="steps.js" defer></script>
+<script src="solver.js" defer></script>
+<script src="aurora.js" defer></script>
+<script src="fx.js" defer></script>
+</head>
+<body>
+
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <symbol id="i-calculator" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2.5"/><rect x="8" y="6" width="8" height="3.5" rx="0.8"/><path d="M8.5 13.5h.01M12 13.5h.01M15.5 13.5h.01M8.5 17h.01M12 17h.01M15.5 17h.01"/></symbol>
+  <symbol id="i-converter" viewBox="0 0 24 24"><path d="M4 8h15M15 4l4 4-4 4M20 16H5M9 12l-4 4 4 4"/></symbol>
+  <symbol id="i-gst" viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9.5 14.5l5-5M9.6 9.6h.01M14.4 14.4h.01"/></symbol>
+  <symbol id="i-emi" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 17h.01M12 17h.01"/></symbol>
+  <symbol id="i-cgpa" viewBox="0 0 24 24"><path d="M12 4 2.5 9 12 14l9.5-5z"/><path d="M6.5 11.3v4.4c0 1.4 2.5 2.8 5.5 2.8s5.5-1.4 5.5-2.8v-4.4M21.5 9v5"/></symbol>
+  <symbol id="i-grades" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 3.5h6v2H9zM8.5 10h7M8.5 13.5h7M8.5 17h4"/></symbol>
+  <symbol id="i-attendance" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4M9 15.2l2 2 4-4"/></symbol>
+  <symbol id="i-scientific" viewBox="0 0 24 24"><path d="M3 13h3l3 7 5-16h7"/></symbol>
+  <symbol id="i-plotter" viewBox="0 0 24 24"><path d="M4 4v16h16"/><path d="M7 14c1.5-5 3-5 4.5 0s3 5 4.5 0 2.5-4 3-4"/></symbol>
+  <symbol id="i-graph3d" viewBox="0 0 24 24"><path d="M12 13V3M12 13l-8 5M12 13l8 5"/><path d="M5 8.5c2.3 2 4.7 2 7 0s4.7-2 7 0"/></symbol>
+  <symbol id="i-solids" viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></symbol>
+  <symbol id="i-vectors" viewBox="0 0 24 24"><path d="M4 20L17 7M17 7h-5M17 7v5"/><path d="M4 20h15M19 20l-3-3M19 20l-3 3"/></symbol>
+  <symbol id="i-matrices" viewBox="0 0 24 24"><path d="M7 4H4v16h3M17 4h3v16h-3"/><path d="M9 9h.01M12 9h.01M15 9h.01M9 15h.01M12 15h.01M15 15h.01"/></symbol>
+  <symbol id="i-calculus" viewBox="0 0 24 24"><path d="M8.5 21c1.8 0 2.4-1.4 2.7-3.5l1.6-11C13.1 4.4 13.7 3 15.5 3"/></symbol>
+  <symbol id="i-statistics" viewBox="0 0 24 24"><path d="M4 20h16"/><path d="M7 20v-6M12 20V6M17 20v-9"/></symbol>
+  <symbol id="i-swap" viewBox="0 0 24 24"><path d="M8 4v15M4 8l4-4 4 4M16 20V5M12 16l4 4 4-4"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M7 7l10 10M17 7 7 17"/></symbol>
+  <symbol id="i-overview" viewBox="0 0 24 24"><rect x="3" y="9" width="5" height="6" rx="1.2"/><rect x="15" y="3" width="6" height="5" rx="1.2"/><rect x="15" y="16" width="6" height="5" rx="1.2"/><path d="M8 12h3.5M11.5 5.5V18.5M11.5 5.5H15M11.5 18.5H15"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-browser" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M3 9h18M6.5 6.8h.01M9 6.8h.01"/></symbol>
+  <symbol id="i-gateway" viewBox="0 0 24 24"><path d="M3 12h6M9 12c3.5 0 4-6.5 8-6.5h3M9 12h11M9 12c3.5 0 4 6.5 8 6.5h3"/><circle cx="9" cy="12" r="1.6"/></symbol>
+  <symbol id="i-database" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="2.8"/><path d="M5 6v12c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8V6M5 12c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8"/></symbol>
+  <symbol id="i-chaos" viewBox="0 0 24 24"><path d="M13 3 9.5 9.5l4.5 2.5-3.5 4.5 2.5 1.5L11 21"/><path d="M4.5 7l3 1.5M19.5 8.5 16 10M5 16.5l3.5-1.5M19 17.5l-3-1.2"/></symbol>
+  <symbol id="i-ask" viewBox="0 0 24 24"><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-6l-4.5 3.5V17H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M9.5 10.2c.4-1.3 1.3-1.9 2.5-1.9 1.4 0 2.4.8 2.4 1.9 0 1.5-2.4 1.6-2.4 3.2M12 15.2h.01"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8.5 5.5v13M15.5 5.5v13"/></symbol>
+  <symbol id="i-replay" viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 0 2.4-5.5M4.5 4.5v4h4"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path d="M6 6l8 6-8 6zM18.5 6v12"/></symbol>
+  <symbol id="i-all" viewBox="0 0 24 24"><path d="M5 6l7 6-7 6M13 6l7 6-7 6"/></symbol>
+  <symbol id="i-cache" viewBox="0 0 24 24"><path d="M13 3 5 13.5h6L10 21l8-10.5h-6z"/></symbol>
+</svg>
+
+<header class="topbar">
+  <a class="brand" href="#home" aria-label="Calculator Suite, overview">
+    <svg class="brand-mark" viewBox="0 0 28 28" aria-hidden="true">
+      <rect x="2" y="2" width="11" height="11" rx="3"/>
+      <rect x="15" y="2" width="11" height="11" rx="3"/>
+      <rect x="2" y="15" width="11" height="11" rx="3"/>
+      <rect class="brand-mark-accent" x="15" y="15" width="11" height="11" rx="3"/>
+    </svg>
+    <span class="brand-name">Calculator Suite</span>
+  </a>
+  <div class="topbar-actions">
+    <button class="search-button" type="button" id="open-search" aria-keyshortcuts="Control+K /">
+      <svg class="icon"><use href="#i-search"/></svg>
+      <span class="search-label">Search tools</span>
+      <kbd class="search-keys" id="search-keys">Ctrl K</kbd>
+    </button>
+    <button class="button-icon theme-toggle" type="button" id="theme-toggle" aria-label="Switch to light theme" title="Switch to light theme">
+      <svg class="icon icon-sun"><use href="#i-sun"/></svg>
+      <svg class="icon icon-moon"><use href="#i-moon"/></svg>
+    </button>
+    <a class="system-status" href="#home" id="system-status" title="Open the system map">
+      <span class="dot" id="system-dot"></span>
+      <span id="system-text">Checking services…</span>
+    </a>
+  </div>
+</header>
+
+<div class="layout">
+
+  <nav class="tool-nav" aria-label="Tools">
+    <div class="nav-group nav-start">
+      <a href="#home" data-tool="home"><svg class="icon"><use href="#i-overview"/></svg><span>Overview</span></a>
+    </div>
+    <div class="nav-group">
+      <p class="nav-heading">Everyday</p>
+      <a href="#calculator" data-tool="calculator"><svg class="icon"><use href="#i-calculator"/></svg><span>Calculator</span></a>
+      <a href="#scientific" data-tool="scientific"><svg class="icon"><use href="#i-scientific"/></svg><span>Scientific calculator</span></a>
+      <a href="#converter" data-tool="converter"><svg class="icon"><use href="#i-converter"/></svg><span>Unit converter</span></a>
+    </div>
+    <div class="nav-group">
+      <p class="nav-heading">Graphs and 3D</p>
+      <a href="#plotter" data-tool="plotter"><svg class="icon"><use href="#i-plotter"/></svg><span>Function plotter</span></a>
+      <a href="#graph3d" data-tool="graph3d"><svg class="icon"><use href="#i-graph3d"/></svg><span>3D graph</span></a>
+      <a href="#solids" data-tool="solids"><svg class="icon"><use href="#i-solids"/></svg><span>3D shapes</span></a>
+      <a href="#vectors" data-tool="vectors"><svg class="icon"><use href="#i-vectors"/></svg><span>3D vectors</span></a>
+    </div>
+    <div class="nav-group">
+      <p class="nav-heading">Algebra and data</p>
+      <a href="#matrices" data-tool="matrices"><svg class="icon"><use href="#i-matrices"/></svg><span>Matrices</span></a>
+      <a href="#calculus" data-tool="calculus"><svg class="icon"><use href="#i-calculus"/></svg><span>Calculus</span></a>
+      <a href="#statistics" data-tool="statistics"><svg class="icon"><use href="#i-statistics"/></svg><span>Statistics</span></a>
+    </div>
+    <div class="nav-group">
+      <p class="nav-heading">Business and finance</p>
+      <a href="#gst" data-tool="gst"><svg class="icon"><use href="#i-gst"/></svg><span>GST calculator</span></a>
+      <a href="#emi" data-tool="emi"><svg class="icon"><use href="#i-emi"/></svg><span>EMI calculator</span></a>
+    </div>
+    <div class="nav-group">
+      <p class="nav-heading">Students</p>
+      <a href="#cgpa" data-tool="cgpa"><svg class="icon"><use href="#i-cgpa"/></svg><span>CGPA and percentage</span></a>
+      <a href="#grades" data-tool="grades"><svg class="icon"><use href="#i-grades"/></svg><span>Marks and grades</span></a>
+      <a href="#attendance" data-tool="attendance"><svg class="icon"><use href="#i-attendance"/></svg><span>Attendance</span></a>
+    </div>
+    <div class="nav-group">
+      <p class="nav-heading">System</p>
+      <a href="#chaos" data-tool="chaos"><svg class="icon"><use href="#i-chaos"/></svg><span>Chaos lab</span></a>
+    </div>
+  </nav>
+
+  <main class="workspace">
+
+    <!-- Overview: the live system map, which is also the way into every tool -->
+    <section class="tool home" id="tool-home" data-tool="home" aria-labelledby="h-home" hidden>
+      <div class="home-stage">
+        <div class="aurora" id="home-aurora" aria-hidden="true"><canvas></canvas></div>
+        <div class="home-top">
+          <div class="home-copy">
+            <div class="home-hero">
+              <h1 id="h-home">Fifteen calculators, eight containers.</h1>
+              <p>Every tool here is answered by its own Docker container behind an Nginx gateway. Choose one from
+                the map: results are saved in PostgreSQL and graphs are cached in Redis.
+                <span class="search-tip">Press <kbd class="search-keys">Ctrl K</kbd> to search.</span></p>
+            </div>
+            <form class="ask" id="ask-form" role="search" novalidate>
+              <label class="ask-label" for="ask-input"><svg class="icon"><use href="#i-ask"/></svg><span class="shiny">Ask in your own words</span></label>
+              <div class="ask-row">
+                <div class="ask-field">
+                  <input id="ask-input" type="text" autocomplete="off" spellcheck="false" maxlength="300"
+                    placeholder="For example: derivative of x^2 sin(x)">
+                </div>
+                <button class="button-primary" type="submit">Show me</button>
+              </div>
+              <div class="presets" id="ask-examples" aria-label="Examples"></div>
+            </form>
+          </div>
+          <aside class="hero-demo" id="hero-demo" aria-label="An example of a worked solution, played step by step"></aside>
+        </div>
+      </div>
+      <div class="ask-result" id="ask-result" aria-live="polite"></div>
+      <div class="map" id="system-map" aria-label="System map: which container answers each tool, and whether it is running"></div>
+      <p class="map-note" id="map-note">Checking the containers…</p>
+      <section class="home-recent" aria-labelledby="h-home-recent">
+        <header class="home-recent-head">
+          <h2 id="h-home-recent">Recent results</h2>
+          <span class="card-meta" id="home-recent-count"></span>
+        </header>
+        <ol class="home-recent-list" id="home-recent-list"></ol>
+      </section>
+    </section>
+
+    <!-- Calculator ------------------------------------------------------- -->
+    <section class="tool" id="tool-calculator" data-tool="calculator" data-service="calc" aria-labelledby="h-calculator">
+      <header class="tool-head">
+        <h2 id="h-calculator">Calculator</h2>
+        <p>Enter two numbers and choose what to do with them.</p>
+      </header>
+      <form class="tool-form" id="form-calculator" novalidate>
+        <div class="calc-row">
+          <div class="field">
+            <label for="calc-num1">First number</label>
+            <input id="calc-num1" name="num1" type="text" inputmode="decimal" autocomplete="off" required>
+          </div>
+          <div class="field">
+            <label for="calc-operation">Operation</label>
+            <select id="calc-operation" name="operation">
+              <option value="add">Add (+)</option>
+              <option value="subtract">Subtract (−)</option>
+              <option value="multiply">Multiply (×)</option>
+              <option value="divide">Divide (÷)</option>
+              <option value="power">Power (^)</option>
+              <option value="modulus">Remainder (mod)</option>
+              <option value="percent_of">Percentage of (%)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="calc-num2">Second number</label>
+            <input id="calc-num2" name="num2" type="text" inputmode="decimal" autocomplete="off" required>
+          </div>
+        </div>
+        <div class="form-actions"><button class="button-primary" type="submit">Calculate</button></div>
+      </form>
+      <div class="result" id="result-calculator" aria-live="polite"></div>
+    </section>
+
+    <!-- Unit converter --------------------------------------------------- -->
+    <section class="tool" id="tool-converter" data-tool="converter" data-service="converter" aria-labelledby="h-converter" hidden>
+      <header class="tool-head">
+        <h2 id="h-converter">Unit converter</h2>
+        <p>Convert length, weight, temperature, area, volume, speed, time, data, energy and pressure.</p>
+      </header>
+      <div class="catalogue-state" id="converter-state"></div>
+      <form class="tool-form" id="form-converter" novalidate>
+        <fieldset class="chips" id="converter-categories">
+          <legend>Measure</legend>
+        </fieldset>
+        <div class="convert-row">
+          <div class="field">
+            <label for="conv-value">Value</label>
+            <input id="conv-value" name="value" type="text" inputmode="decimal" autocomplete="off" value="1" required>
+          </div>
+          <div class="field">
+            <label for="conv-from">From</label>
+            <select id="conv-from" name="from_unit"></select>
+          </div>
+          <button class="button-icon swap" type="button" id="conv-swap" aria-label="Swap the two units" title="Swap units">
+            <svg class="icon"><use href="#i-swap"/></svg>
+          </button>
+          <div class="field">
+            <label for="conv-to">To</label>
+            <select id="conv-to" name="to_unit"></select>
+          </div>
+        </div>
+        <div class="form-actions"><button class="button-primary" type="submit">Convert</button></div>
+      </form>
+      <div class="result" id="result-converter" aria-live="polite"></div>
+    </section>
+
+    <!-- Scientific calculator ------------------------------------------- -->
+    <section class="tool" id="tool-scientific" data-tool="scientific" data-service="math" aria-labelledby="h-scientific" hidden>
+      <header class="tool-head">
+        <h2 id="h-scientific">Scientific calculator</h2>
+        <p>Type an expression or use the keys. Functions, powers, factorials and brackets all work, for example sin(30)^2 + log(100).</p>
+      </header>
+      <form class="tool-form" id="form-scientific" novalidate>
+        <div class="sci-top">
+          <div class="field">
+            <label for="sci-expression">Expression</label>
+            <input id="sci-expression" name="expression" type="text" autocomplete="off" spellcheck="false" autocapitalize="off" class="sci-input">
+          </div>
+          <fieldset class="segmented compact">
+            <legend>Angles in</legend>
+            <label><input type="radio" name="angle" value="deg" checked><span>Degrees</span></label>
+            <label><input type="radio" name="angle" value="rad"><span>Radians</span></label>
+          </fieldset>
+        </div>
+        <div class="keypad" id="sci-keypad">
+          <div class="keys keys-fn" role="group" aria-label="Function keys">
+            <button type="button" class="key" data-insert="sin(">sin</button>
+            <button type="button" class="key" data-insert="cos(">cos</button>
+            <button type="button" class="key" data-insert="tan(">tan</button>
+            <button type="button" class="key" data-insert="ln(">ln</button>
+            <button type="button" class="key" data-insert="log(">log</button>
+            <button type="button" class="key" data-insert="sqrt(" aria-label="Square root">√</button>
+            <button type="button" class="key" data-insert="asin(" aria-label="Inverse sine">sin⁻¹</button>
+            <button type="button" class="key" data-insert="acos(" aria-label="Inverse cosine">cos⁻¹</button>
+            <button type="button" class="key" data-insert="atan(" aria-label="Inverse tangent">tan⁻¹</button>
+            <button type="button" class="key" data-insert="exp(" aria-label="e to the power">eˣ</button>
+            <button type="button" class="key" data-insert="^2" aria-label="Squared">x²</button>
+            <button type="button" class="key" data-insert="^" aria-label="Power">xʸ</button>
+            <button type="button" class="key" data-insert="(">(</button>
+            <button type="button" class="key" data-insert=")">)</button>
+            <button type="button" class="key" data-insert="π" aria-label="Pi">π</button>
+            <button type="button" class="key" data-insert="e" aria-label="Euler's number e">e</button>
+            <button type="button" class="key" data-insert="!" aria-label="Factorial">n!</button>
+            <button type="button" class="key" data-insert="ans" aria-label="Previous answer">Ans</button>
+            <button type="button" class="key" data-insert=" nCr " aria-label="Combinations, n C r">nCr</button>
+            <button type="button" class="key" data-insert=" nPr " aria-label="Permutations, n P r">nPr</button>
+            <button type="button" class="key" data-insert="abs(" aria-label="Absolute value">|x|</button>
+            <button type="button" class="key" data-insert="cbrt(" aria-label="Cube root">∛</button>
+            <button type="button" class="key" data-insert="10^" aria-label="10 to the power">10ˣ</button>
+            <button type="button" class="key" data-insert="^(-1)" aria-label="Reciprocal">x⁻¹</button>
+          </div>
+          <div class="keys keys-num" role="group" aria-label="Number keys">
+            <button type="button" class="key key-digit" data-insert="7">7</button>
+            <button type="button" class="key key-digit" data-insert="8">8</button>
+            <button type="button" class="key key-digit" data-insert="9">9</button>
+            <button type="button" class="key key-op" data-insert="/" aria-label="Divide">÷</button>
+            <button type="button" class="key key-op" data-action="back" aria-label="Delete">⌫</button>
+            <button type="button" class="key key-digit" data-insert="4">4</button>
+            <button type="button" class="key key-digit" data-insert="5">5</button>
+            <button type="button" class="key key-digit" data-insert="6">6</button>
+            <button type="button" class="key key-op" data-insert="*" aria-label="Multiply">×</button>
+            <button type="button" class="key key-op" data-action="clear" aria-label="Clear">AC</button>
+            <button type="button" class="key key-digit" data-insert="1">1</button>
+            <button type="button" class="key key-digit" data-insert="2">2</button>
+            <button type="button" class="key key-digit" data-insert="3">3</button>
+            <button type="button" class="key key-op" data-insert="-" aria-label="Minus">−</button>
+            <button type="button" class="key key-op" data-insert="%" aria-label="Percent">%</button>
+            <button type="button" class="key key-digit" data-insert="0">0</button>
+            <button type="button" class="key key-digit" data-insert=".">.</button>
+            <button type="button" class="key key-op" data-insert="," aria-label="Comma, between values">,</button>
+            <button type="button" class="key key-op" data-insert="+" aria-label="Plus">+</button>
+            <button type="submit" class="key key-equals" aria-label="Calculate">=</button>
+          </div>
+        </div>
+      </form>
+      <div class="result" id="result-scientific" aria-live="polite"></div>
+    </section>
+
+    <!-- Function plotter ------------------------------------------------ -->
+    <section class="tool" id="tool-plotter" data-tool="plotter" data-service="math" aria-labelledby="h-plotter" hidden>
+      <header class="tool-head">
+        <h2 id="h-plotter">Function plotter</h2>
+        <p>Plot up to four functions of x. Roots, turning points and where each graph crosses the y-axis are marked.</p>
+      </header>
+      <form class="tool-form" id="form-plotter" novalidate>
+        <div class="fn-rows" id="fn-rows"></div>
+        <div class="row-tools">
+          <button class="button-secondary" type="button" id="fn-add"><svg class="icon"><use href="#i-plus"/></svg>Add function</button>
+          <div class="presets" id="plotter-presets" aria-label="Examples"></div>
+        </div>
+        <div class="three-col">
+          <div class="field">
+            <label for="plot-xmin">x from</label>
+            <input id="plot-xmin" name="x_min" type="text" inputmode="decimal" autocomplete="off" value="-10">
+          </div>
+          <div class="field">
+            <label for="plot-xmax">x to</label>
+            <input id="plot-xmax" name="x_max" type="text" inputmode="decimal" autocomplete="off" value="10">
+          </div>
+          <fieldset class="segmented">
+            <legend>Angles in</legend>
+            <label><input type="radio" name="angle" value="rad" checked><span>Radians</span></label>
+            <label><input type="radio" name="angle" value="deg"><span>Degrees</span></label>
+          </fieldset>
+        </div>
+        <div class="form-actions"><button class="button-primary" type="submit">Plot</button></div>
+      </form>
+      <div class="result" id="result-plotter" aria-live="polite"></div>
+    </section>
+
+    <!-- 3D graph ---------------------------------------------------------- -->
+    <section class="tool" id="tool-graph3d" data-tool="graph3d" data-service="math" aria-labelledby="h-graph3d" hidden>
+      <header class="tool-head">
+        <h2 id="h-graph3d">3D graph</h2>
+        <p>Draw a surface z = f(x, y), a curve in space, or a parametric surface. Drag to rotate, scroll to zoom.</p>
+      </header>
+      <form class="tool-form" id="form-graph3d" novalidate>
+        <fieldset class="segmented">
+          <legend>Graph type</legend>
+          <label><input type="radio" name="mode" value="surface" checked><span>Surface z = f(x, y)</span></label>
+          <label><input type="radio" name="mode" value="curve"><span>3D curve</span></label>
+          <label><input type="radio" name="mode" value="parametric"><span>Parametric surface</span></label>
+        </fieldset>
+        <div class="mode-fields" data-mode="surface">
+          <div class="field">
+            <label for="g3-z">z =</label>
+            <input id="g3-z" name="expression" type="text" autocomplete="off" spellcheck="false">
+          </div>
+          <div class="four-col">
+            <div class="field"><label for="g3-xmin">x from</label><input id="g3-xmin" name="x_min" type="text" inputmode="decimal" value="-6"></div>
+            <div class="field"><label for="g3-xmax">x to</label><input id="g3-xmax" name="x_max" type="text" inputmode="decimal" value="6"></div>
+            <div class="field"><label for="g3-ymin">y from</label><input id="g3-ymin" name="y_min" type="text" inputmode="decimal" value="-6"></div>
+            <div class="field"><label for="g3-ymax">y to</label><input id="g3-ymax" name="y_max" type="text" inputmode="decimal" value="6"></div>
+          </div>
+        </div>
+        <div class="mode-fields" data-mode="curve" hidden>
+          <div class="three-col">
+            <div class="field"><label for="g3-cx">x(t) =</label><input id="g3-cx" name="curve_x" type="text" autocomplete="off" spellcheck="false"></div>
+            <div class="field"><label for="g3-cy">y(t) =</label><input id="g3-cy" name="curve_y" type="text" autocomplete="off" spellcheck="false"></div>
+            <div class="field"><label for="g3-cz">z(t) =</label><input id="g3-cz" name="curve_z" type="text" autocomplete="off" spellcheck="false"></div>
+          </div>
+          <div class="two-col">
+            <div class="field"><label for="g3-tmin">t from</label><input id="g3-tmin" name="t_min" type="text" inputmode="decimal" value="0"></div>
+            <div class="field"><label for="g3-tmax">t to</label><input id="g3-tmax" name="t_max" type="text" inputmode="decimal" value="25"></div>
+          </div>
+        </div>
+        <div class="mode-fields" data-mode="parametric" hidden>
+          <div class="three-col">
+            <div class="field"><label for="g3-px">x(u, v) =</label><input id="g3-px" name="param_x" type="text" autocomplete="off" spellcheck="false"></div>
+            <div class="field"><label for="g3-py">y(u, v) =</label><input id="g3-py" name="param_y" type="text" autocomplete="off" spellcheck="false"></div>
+            <div class="field"><label for="g3-pz">z(u, v) =</label><input id="g3-pz" name="param_z" type="text" autocomplete="off" spellcheck="false"></div>
+          </div>
+          <div class="four-col">
+            <div class="field"><label for="g3-umin">u from</label><input id="g3-umin" name="u_min" type="text" inputmode="decimal" value="0"></div>
+            <div class="field"><label for="g3-umax">u to</label><input id="g3-umax" name="u_max" type="text" inputmode="decimal" value="2pi"></div>
+            <div class="field"><label for="g3-vmin">v from</label><input id="g3-vmin" name="v_min" type="text" inputmode="decimal" value="0"></div>
+            <div class="field"><label for="g3-vmax">v to</label><input id="g3-vmax" name="v_max" type="text" inputmode="decimal" value="2pi"></div>
+          </div>
+        </div>
+        <div class="presets" id="graph3d-presets" aria-label="Examples"></div>
+        <div class="row-tools">
+          <div class="field narrow" id="g3-detail-field">
+            <label for="g3-detail">Detail</label>
+            <select id="g3-detail" name="resolution">
+              <option value="40">Draft</option>
+              <option value="70" selected>Normal</option>
+              <option value="100">Fine</option>
+            </select>
+          </div>
+          <div class="form-actions"><button class="button-primary" type="submit">Draw 3D graph</button></div>
+        </div>
+      </form>
+      <div class="result" id="result-graph3d" aria-live="polite"></div>
+    </section>
+
+    <!-- 3D shapes ---------------------------------------------------------- -->
+    <section class="tool" id="tool-solids" data-tool="solids" data-service="math" aria-labelledby="h-solids" hidden>
+      <header class="tool-head">
+        <h2 id="h-solids">3D shapes</h2>
+        <p>Find the volume and surface area of a solid, and see it as a 3D model you can turn around.</p>
+      </header>
+      <div class="catalogue-state" id="solids-state"></div>
+      <form class="tool-form" id="form-solids" novalidate>
+        <fieldset class="chips" id="solid-shapes">
+          <legend>Shape</legend>
+        </fieldset>
+        <div class="dims-row" id="solid-dims"></div>
+        <div class="form-actions"><button class="button-primary" type="submit">Calculate</button></div>
+      </form>
+      <div class="result" id="result-solids" aria-live="polite"></div>
+    </section>
+
+    <!-- 3D vectors ---------------------------------------------------------- -->
+    <section class="tool" id="tool-vectors" data-tool="vectors" data-service="matrix" aria-labelledby="h-vectors" hidden>
+      <header class="tool-head">
+        <h2 id="h-vectors">3D vectors</h2>
+        <p>Dot and cross products, lengths, the angle between two vectors and projections, drawn in 3D.</p>
+      </header>
+      <form class="tool-form" id="form-vectors" novalidate>
+        <div class="vector-rows">
+          <div class="vector-row" data-vector="a">
+            <span class="series-key" style="--series: var(--series-1)"></span>
+            <span class="vector-name">a</span>
+            <input name="ax" type="text" inputmode="decimal" autocomplete="off" aria-label="a, x component" value="1">
+            <input name="ay" type="text" inputmode="decimal" autocomplete="off" aria-label="a, y component" value="2">
+            <input name="az" type="text" inputmode="decimal" autocomplete="off" aria-label="a, z component" value="3">
+          </div>
+          <div class="vector-row" data-vector="b">
+            <span class="series-key" style="--series: var(--series-2)"></span>
+            <span class="vector-name">b</span>
+            <input name="bx" type="text" inputmode="decimal" autocomplete="off" aria-label="b, x component" value="4">
+            <input name="by" type="text" inputmode="decimal" autocomplete="off" aria-label="b, y component" value="-1">
+            <input name="bz" type="text" inputmode="decimal" autocomplete="off" aria-label="b, z component" value="2">
+          </div>
+          <div class="vector-row" data-vector="c" hidden>
+            <span class="series-key" style="--series: var(--series-4)"></span>
+            <span class="vector-name">c</span>
+            <input name="cx" type="text" inputmode="decimal" autocomplete="off" aria-label="c, x component">
+            <input name="cy" type="text" inputmode="decimal" autocomplete="off" aria-label="c, y component">
+            <input name="cz" type="text" inputmode="decimal" autocomplete="off" aria-label="c, z component">
+          </div>
+          <p class="vector-axes" aria-hidden="true"><span></span><span></span><span>x</span><span>y</span><span>z</span></p>
+        </div>
+        <div class="form-actions split">
+          <button class="button-secondary" type="button" id="vector-toggle-c"><svg class="icon"><use href="#i-plus"/></svg>Add vector c</button>
+          <button class="button-primary" type="submit">Calculate</button>
+        </div>
+      </form>
+      <div class="result" id="result-vectors" aria-live="polite"></div>
+    </section>
+
+    <!-- Matrices -------------------------------------------------------------- -->
+    <section class="tool" id="tool-matrices" data-tool="matrices" data-service="matrix" aria-labelledby="h-matrices" hidden>
+      <header class="tool-head">
+        <h2 id="h-matrices">Matrices</h2>
+        <p>Determinant, inverse, eigenvalues, row reduction and more. Answers are exact, so 1/3 stays 1/3.</p>
+      </header>
+      <form class="tool-form" id="form-matrices" novalidate>
+        <div class="field narrow-wide">
+          <label for="mx-op">Operation</label>
+          <select id="mx-op" name="operation">
+            <optgroup label="One matrix">
+              <option value="determinant">Determinant, det(A)</option>
+              <option value="inverse">Inverse, A⁻¹</option>
+              <option value="transpose">Transpose, Aᵀ</option>
+              <option value="rank">Rank</option>
+              <option value="trace">Trace</option>
+              <option value="power">Power, Aⁿ</option>
+              <option value="rref">Row reduce (RREF)</option>
+              <option value="eigen">Eigenvalues and eigenvectors</option>
+              <option value="scalar">Multiply by a number, kA</option>
+            </optgroup>
+            <optgroup label="Two matrices">
+              <option value="add">Add, A + B</option>
+              <option value="subtract">Subtract, A − B</option>
+              <option value="multiply">Multiply, A × B</option>
+              <option value="solve">Solve AX = B (simultaneous equations)</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="matrix-editors">
+          <div class="matrix-editor" data-matrix="a">
+            <div class="matrix-head">
+              <span class="matrix-name">A</span>
+              <label class="visually-hidden" for="mx-a-rows">Rows of A</label>
+              <select id="mx-a-rows" class="size-select" data-dim="rows"></select>
+              <span aria-hidden="true">×</span>
+              <label class="visually-hidden" for="mx-a-cols">Columns of A</label>
+              <select id="mx-a-cols" class="size-select" data-dim="cols"></select>
+              <button class="button-text" type="button" data-fill="identity">Identity</button>
+              <button class="button-text" type="button" data-fill="clear">Clear</button>
+            </div>
+            <div class="matrix-grid" data-grid="a"></div>
+          </div>
+          <div class="matrix-editor" data-matrix="b" hidden>
+            <div class="matrix-head">
+              <span class="matrix-name">B</span>
+              <label class="visually-hidden" for="mx-b-rows">Rows of B</label>
+              <select id="mx-b-rows" class="size-select" data-dim="rows"></select>
+              <span aria-hidden="true">×</span>
+              <label class="visually-hidden" for="mx-b-cols">Columns of B</label>
+              <select id="mx-b-cols" class="size-select" data-dim="cols"></select>
+              <button class="button-text" type="button" data-fill="identity">Identity</button>
+              <button class="button-text" type="button" data-fill="clear">Clear</button>
+            </div>
+            <div class="matrix-grid" data-grid="b"></div>
+          </div>
+        </div>
+        <div class="two-col" id="mx-extra" hidden>
+          <div class="field" id="mx-scalar-field" hidden>
+            <label for="mx-scalar">The number k</label>
+            <input id="mx-scalar" name="scalar" type="text" inputmode="decimal" autocomplete="off" value="2">
+          </div>
+          <div class="field" id="mx-power-field" hidden>
+            <label for="mx-power">The power n</label>
+            <input id="mx-power" name="power" type="text" inputmode="numeric" autocomplete="off" value="2">
+          </div>
+        </div>
+        <p class="hint">Cells take whole numbers, decimals or fractions like 3/4. Use Tab to move between cells.</p>
+        <div class="form-actions"><button class="button-primary" type="submit">Calculate</button></div>
+      </form>
+      <div class="result" id="result-matrices" aria-live="polite"></div>
+    </section>
+
+    <!-- Calculus ---------------------------------------------------------- -->
+    <section class="tool" id="tool-calculus" data-tool="calculus" data-service="math" aria-labelledby="h-calculus" hidden>
+      <header class="tool-head">
+        <h2 id="h-calculus">Calculus</h2>
+        <p>Differentiate a function exactly, find the tangent at a point, and work out the area under the curve between two limits.</p>
+      </header>
+      <form class="tool-form" id="form-calculus" novalidate>
+        <div class="field">
+          <label for="calc-fx">f(x) =</label>
+          <input id="calc-fx" name="expression" type="text" autocomplete="off" spellcheck="false" value="x^3 - 3x">
+        </div>
+        <div class="presets" id="calculus-presets" aria-label="Examples"></div>
+        <div class="three-col">
+          <div class="field"><label for="calc-x0">Point x₀ (for the derivative)</label><input id="calc-x0" name="x0" type="text" inputmode="decimal" value="2"></div>
+          <div class="field"><label for="calc-a">From a (for the integral)</label><input id="calc-a" name="a" type="text" inputmode="decimal" value="-2"></div>
+          <div class="field"><label for="calc-b">To b</label><input id="calc-b" name="b" type="text" inputmode="decimal" value="2"></div>
+        </div>
+        <p class="hint">Angles are in radians here.</p>
+        <div class="form-actions"><button class="button-primary" type="submit">Work it out</button></div>
+      </form>
+      <div class="result" id="result-calculus" aria-live="polite"></div>
+    </section>
+
+    <!-- Statistics -------------------------------------------------------- -->
+    <section class="tool" id="tool-statistics" data-tool="statistics" data-service="math" aria-labelledby="h-statistics" hidden>
+      <header class="tool-head">
+        <h2 id="h-statistics">Statistics</h2>
+        <p>Mean, median, mode, standard deviation, quartiles and outliers, with a histogram and box plot. Add y values for a line of best fit.</p>
+      </header>
+      <form class="tool-form" id="form-statistics" novalidate>
+        <div class="field">
+          <label for="stats-x">Values</label>
+          <textarea id="stats-x" name="x" rows="3" spellcheck="false" placeholder="For example: 12, 15, 11, 18, 20, 15, 14"></textarea>
+        </div>
+        <details class="more-fields" id="stats-paired">
+          <summary>Add paired y values for a line of best fit</summary>
+          <div class="field">
+            <label for="stats-y">y values (one for each value above)</label>
+            <textarea id="stats-y" name="y" rows="3" spellcheck="false"></textarea>
+          </div>
+        </details>
+        <fieldset class="segmented">
+          <legend>The values are</legend>
+          <label><input type="radio" name="mode" value="sample" checked><span>A sample (divide by n − 1)</span></label>
+          <label><input type="radio" name="mode" value="population"><span>The whole population (divide by n)</span></label>
+        </fieldset>
+        <div class="form-actions split">
+          <button class="button-secondary" type="button" id="stats-example">Use example data</button>
+          <button class="button-primary" type="submit">Analyse</button>
+        </div>
+      </form>
+      <div class="result" id="result-statistics" aria-live="polite"></div>
+    </section>
+
+    <!-- GST -------------------------------------------------------------- -->
+    <section class="tool" id="tool-gst" data-tool="gst" data-service="finance" aria-labelledby="h-gst" hidden>
+      <header class="tool-head">
+        <h2 id="h-gst">GST calculator</h2>
+        <p>Add GST to a price, or work out how much GST a price already includes.</p>
+      </header>
+      <div class="catalogue-state" id="gst-state"></div>
+      <form class="tool-form" id="form-gst" novalidate>
+        <div class="field">
+          <label for="gst-amount">Amount</label>
+          <div class="affix"><span class="affix-text">₹</span>
+            <input id="gst-amount" name="amount" type="text" inputmode="decimal" autocomplete="off" required>
+          </div>
+        </div>
+        <fieldset class="chips" id="gst-rates">
+          <legend>GST rate</legend>
+        </fieldset>
+        <p class="hint" id="gst-rates-note"></p>
+        <div class="field" id="gst-custom-field" hidden>
+          <label for="gst-custom">Other rate</label>
+          <div class="affix">
+            <input id="gst-custom" name="custom_rate" type="text" inputmode="decimal" autocomplete="off">
+            <span class="affix-text">%</span>
+          </div>
+        </div>
+        <div class="two-col">
+          <fieldset class="segmented">
+            <legend>The amount is</legend>
+            <label><input type="radio" name="mode" value="exclusive" checked><span>Before GST</span></label>
+            <label><input type="radio" name="mode" value="inclusive"><span>Including GST</span></label>
+          </fieldset>
+          <fieldset class="segmented">
+            <legend>Sale</legend>
+            <label><input type="radio" name="supply" value="intra" checked><span>Within a state</span></label>
+            <label><input type="radio" name="supply" value="inter"><span>Between states</span></label>
+          </fieldset>
+        </div>
+        <div class="form-actions"><button class="button-primary" type="submit">Calculate GST</button></div>
+      </form>
+      <div class="result" id="result-gst" aria-live="polite"></div>
+    </section>
+
+    <!-- EMI -------------------------------------------------------------- -->
+    <section class="tool" id="tool-emi" data-tool="emi" data-service="finance" aria-labelledby="h-emi" hidden>
+      <header class="tool-head">
+        <h2 id="h-emi">EMI calculator</h2>
+        <p>See the monthly instalment for a loan, and how much of it goes to interest.</p>
+      </header>
+      <form class="tool-form" id="form-emi" novalidate>
+        <div class="field">
+          <label for="emi-principal">Loan amount</label>
+          <div class="affix"><span class="affix-text">₹</span>
+            <input id="emi-principal" name="principal" type="text" inputmode="decimal" autocomplete="off" required>
+          </div>
+        </div>
+        <div class="two-col">
+          <div class="field">
+            <label for="emi-rate">Interest rate</label>
+            <div class="affix">
+              <input id="emi-rate" name="annual_rate" type="text" inputmode="decimal" autocomplete="off" required>
+              <span class="affix-text">% a year</span>
+            </div>
+          </div>
+          <div class="field">
+            <label for="emi-tenure">Tenure</label>
+            <div class="tenure">
+              <input id="emi-tenure" name="tenure" type="text" inputmode="numeric" autocomplete="off" required>
+              <fieldset class="segmented compact">
+                <legend class="visually-hidden">Tenure in</legend>
+                <label><input type="radio" name="tenure_unit" value="years" checked><span>Years</span></label>
+                <label><input type="radio" name="tenure_unit" value="months"><span>Months</span></label>
+              </fieldset>
+            </div>
+          </div>
+        </div>
+        <div class="form-actions"><button class="button-primary" type="submit">Calculate EMI</button></div>
+      </form>
+      <div class="result" id="result-emi" aria-live="polite"></div>
+    </section>
+
+    <!-- CGPA ------------------------------------------------------------- -->
+    <section class="tool" id="tool-cgpa" data-tool="cgpa" data-service="student" aria-labelledby="h-cgpa" hidden>
+      <header class="tool-head">
+        <h2 id="h-cgpa">CGPA and percentage</h2>
+        <p>Convert a CGPA on a 10-point scale to a percentage, or a percentage back to CGPA.</p>
+      </header>
+      <div class="catalogue-state" id="cgpa-state"></div>
+      <form class="tool-form" id="form-cgpa" novalidate>
+        <fieldset class="segmented">
+          <legend>Convert</legend>
+          <label><input type="radio" name="direction" value="to_percentage" checked><span>CGPA to percentage</span></label>
+          <label><input type="radio" name="direction" value="to_cgpa"><span>Percentage to CGPA</span></label>
+        </fieldset>
+        <div class="two-col">
+          <div class="field">
+            <label for="cgpa-value" id="cgpa-value-label">CGPA</label>
+            <input id="cgpa-value" name="value" type="text" inputmode="decimal" autocomplete="off" required>
+          </div>
+          <div class="field">
+            <label for="cgpa-formula">Formula</label>
+            <select id="cgpa-formula" name="formula"></select>
+          </div>
+        </div>
+        <div class="two-col" id="cgpa-custom" hidden>
+          <div class="field">
+            <label for="cgpa-multiplier">Multiply CGPA by</label>
+            <input id="cgpa-multiplier" name="multiplier" type="text" inputmode="decimal" autocomplete="off" value="10">
+          </div>
+          <div class="field">
+            <label for="cgpa-offset">Then add</label>
+            <input id="cgpa-offset" name="offset" type="text" inputmode="decimal" autocomplete="off" value="0">
+          </div>
+        </div>
+        <div class="form-actions"><button class="button-primary" type="submit">Convert</button></div>
+      </form>
+      <div class="result" id="result-cgpa" aria-live="polite"></div>
+    </section>
+
+    <!-- Grades ----------------------------------------------------------- -->
+    <section class="tool" id="tool-grades" data-tool="grades" data-service="student" aria-labelledby="h-grades" hidden>
+      <header class="tool-head">
+        <h2 id="h-grades">Marks and grades</h2>
+        <p>Enter your marks for each subject to get the average, percentage and grades. Add credits to get your SGPA.</p>
+      </header>
+      <form class="tool-form" id="form-grades" novalidate>
+        <div class="subjects" role="group" aria-label="Subjects">
+          <div class="subject-head" aria-hidden="true">
+            <span>Subject</span><span>Marks</span><span>Out of</span><span>Credits</span><span></span>
+          </div>
+          <div id="subject-rows"></div>
+        </div>
+        <div class="form-actions split">
+          <button class="button-secondary" type="button" id="add-subject"><svg class="icon"><use href="#i-plus"/></svg>Add subject</button>
+          <button class="button-primary" type="submit">Calculate grades</button>
+        </div>
+      </form>
+      <div class="result" id="result-grades" aria-live="polite"></div>
+    </section>
+
+    <!-- Attendance ------------------------------------------------------- -->
+    <section class="tool" id="tool-attendance" data-tool="attendance" data-service="student" aria-labelledby="h-attendance" hidden>
+      <header class="tool-head">
+        <h2 id="h-attendance">Attendance</h2>
+        <p>Check your attendance and how many classes you can miss, or need to attend.</p>
+      </header>
+      <form class="tool-form" id="form-attendance" novalidate>
+        <div class="three-col">
+          <div class="field">
+            <label for="att-attended">Classes attended</label>
+            <input id="att-attended" name="attended" type="text" inputmode="numeric" autocomplete="off" required>
+          </div>
+          <div class="field">
+            <label for="att-total">Classes held</label>
+            <input id="att-total" name="total" type="text" inputmode="numeric" autocomplete="off" required>
+          </div>
+          <div class="field">
+            <label for="att-required">Required</label>
+            <div class="affix">
+              <input id="att-required" name="required" type="text" inputmode="decimal" autocomplete="off" value="75">
+              <span class="affix-text">%</span>
+            </div>
+          </div>
+        </div>
+        <div class="form-actions"><button class="button-primary" type="submit">Check attendance</button></div>
+      </form>
+      <div class="result" id="result-attendance" aria-live="polite"></div>
+    </section>
+
+    <!-- Chaos lab -------------------------------------------------------- -->
+    <section class="tool" id="tool-chaos" data-tool="chaos" aria-labelledby="h-chaos" hidden>
+      <header class="tool-head">
+        <h2 id="h-chaos">Chaos lab</h2>
+        <p>Break a container on purpose and watch the system cope. <strong>Crash</strong> stops it, so Docker or Kubernetes starts it again.
+          <strong>Slow</strong> and <strong>Errors</strong> keep it running but make it misbehave for 30 seconds.
+          The other tools keep working while one container is down.</p>
+      </header>
+      <form class="tool-form" id="form-chaos" novalidate>
+        <div class="two-col">
+          <div class="field">
+            <label for="chaos-target">Container</label>
+            <select id="chaos-target" name="target"></select>
+          </div>
+          <fieldset class="segmented">
+            <legend>What goes wrong</legend>
+            <label><input type="radio" name="mode" value="crash" checked><span>Crash</span></label>
+            <label><input type="radio" name="mode" value="slow"><span>Slow</span></label>
+            <label><input type="radio" name="mode" value="errors"><span>Errors</span></label>
+          </fieldset>
+        </div>
+        <p class="hint" id="chaos-hint"></p>
+        <div class="form-actions wrap">
+          <button class="button-primary" type="submit">Break it</button>
+          <button class="button-secondary" type="button" id="chaos-surprise">Surprise me</button>
+          <button class="button-secondary" type="button" id="chaos-heal">Back to normal</button>
+        </div>
+      </form>
+      <div class="chaos-board" id="chaos-board" aria-label="Containers and how long each has been running"></div>
+      <div class="chaos-log-head"><h3>What happened</h3><span class="card-meta" id="chaos-clock"></span></div>
+      <ol class="chaos-log" id="chaos-log" aria-live="polite"><li class="history-empty">Nothing yet. Break a container above.</li></ol>
+    </section>
+  </main>
+
+  <aside class="sidebar">
+    <section class="card" aria-labelledby="h-history">
+      <header class="card-head">
+        <h2 id="h-history">Recent</h2>
+        <span class="card-meta" id="history-count"></span>
+        <button class="button-text" type="button" id="clear-history" hidden>Clear</button>
+      </header>
+      <ol class="history-list" id="history-list"></ol>
+    </section>
+
+    <section class="card" id="services" aria-labelledby="h-services">
+      <header class="card-head">
+        <h2 id="h-services">System</h2>
+        <span class="card-meta" id="services-checked"></span>
+        <a class="button-text" href="#home">Open the map</a>
+      </header>
+      <ul class="service-list" id="service-list"></ul>
+    </section>
+  </aside>
+
+</div>
+
+<dialog class="palette" id="palette" aria-labelledby="palette-label">
+  <div class="palette-field">
+    <svg class="icon"><use href="#i-search"/></svg>
+    <label class="visually-hidden" id="palette-label" for="palette-input">Search tools</label>
+    <input id="palette-input" type="text" autocomplete="off" spellcheck="false" autocapitalize="off"
+      placeholder="Search tools, for example matrix or loan" role="combobox" aria-expanded="true"
+      aria-controls="palette-list" aria-autocomplete="list">
+    <kbd>Esc</kbd>
+  </div>
+  <ul class="palette-list" id="palette-list" role="listbox" aria-label="Matching tools"></ul>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<template id="subject-row">
+  <div class="subject-row">
+    <input class="subject-name" type="text" autocomplete="off" aria-label="Subject name" placeholder="Subject">
+    <input class="subject-marks" type="text" inputmode="decimal" autocomplete="off" aria-label="Marks">
+    <input class="subject-max" type="text" inputmode="decimal" autocomplete="off" aria-label="Out of" value="100">
+    <input class="subject-credits" type="text" inputmode="decimal" autocomplete="off" aria-label="Credits (optional)" placeholder="–">
+    <button class="button-icon remove" type="button" aria-label="Remove subject" title="Remove subject">
+      <svg class="icon"><use href="#i-close"/></svg>
+    </button>
+  </div>
+</template>
+
+</body>
+</html>

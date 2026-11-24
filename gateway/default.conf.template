@@ -1,0 +1,137 @@
+# API gateway + web server for the Calculator Suite.
+#
+# This is a template: when the container starts, the official nginx image fills in
+#   NGINX_LOCAL_RESOLVERS  the container's DNS server (Docker's 127.0.0.11, or kube-dns in Kubernetes)
+#   DNS_SUFFIX             "" with Docker Compose, ".calc-suite.svc.cluster.local" in Kubernetes
+# and writes the result to /etc/nginx/conf.d/default.conf.
+
+server {
+    listen 80;
+    server_name _;
+    server_tokens off;
+
+    # Look service names up again every 10 seconds, so containers that were
+    # restarted, recreated or scaled are picked up without restarting the gateway.
+    resolver ${NGINX_LOCAL_RESOLVERS} valid=10s ipv6=off;
+    resolver_timeout 2s;
+
+    root /usr/share/nginx/html;
+    index index.html;
+    # API requests are small JSON; 256 KB still fits the 5,000 values the statistics tool accepts
+    client_max_body_size 256k;
+
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml;
+    # plotly.min.js (4.8 MB) is compressed once when the image is built; serve that .gz copy as-is
+    gzip_static on;
+
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "same-origin" always;
+    # Browsers check for a newer copy on every load, so a rebuilt gateway shows up straight away
+    add_header Cache-Control "no-cache" always;
+
+    # Health check for Docker and Kubernetes
+    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    # The web page (index.html, styles.css, app.js, fonts)
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # ---------------------------------------------------------------------
+    # API routes:  /api/<name>/<path>  ->  http://<name>-service:5000/<path>
+    # The browser only ever talks to this gateway, so there is no CORS to
+    # configure and the services themselves are never published to the host.
+    # ---------------------------------------------------------------------
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Request-ID $request_id;
+    proxy_connect_timeout 2s;
+    proxy_read_timeout 15s;
+
+    location /api/calc/ {
+        set $service calc-service${DNS_SUFFIX};
+        rewrite ^/api/calc/(.*)$ /$1 break;
+        proxy_pass http://$service:5000;
+    }
+
+    location /api/converter/ {
+        set $service converter-service${DNS_SUFFIX};
+        rewrite ^/api/converter/(.*)$ /$1 break;
+        proxy_pass http://$service:5000;
+    }
+
+    location /api/finance/ {
+        set $service finance-service${DNS_SUFFIX};
+        rewrite ^/api/finance/(.*)$ /$1 break;
+        proxy_pass http://$service:5000;
+    }
+
+    location /api/student/ {
+        set $service student-service${DNS_SUFFIX};
+        rewrite ^/api/student/(.*)$ /$1 break;
+        proxy_pass http://$service:5000;
+    }
+
+    location /api/math/ {
+        set $service math-service${DNS_SUFFIX};
+        rewrite ^/api/math/(.*)$ /$1 break;
+        proxy_pass http://$service:5000;
+    }
+
+    location /api/matrix/ {
+        set $service matrix-service${DNS_SUFFIX};
+        rewrite ^/api/matrix/(.*)$ /$1 break;
+        proxy_pass http://$service:5000;
+    }
+
+    location /api/solver/ {
+        set $service solver-service${DNS_SUFFIX};
+        rewrite ^/api/solver/(.*)$ /$1 break;
+        proxy_pass http://$service:5000;
+    }
+
+    # The chaos lab breaks history-service on purpose like the others (the rest of its API stays
+    # read-and-clear only, below). An exact match wins over the prefix location that follows.
+    location = /api/history/chaos {
+        set $service history-service${DNS_SUFFIX};
+        rewrite ^/api/history/chaos$ /chaos break;
+        proxy_pass http://$service:5000;
+    }
+
+    location /api/history/ {
+        # The browser may read and clear history; only the services may add to it.
+        limit_except GET DELETE {
+            deny all;
+        }
+        set $service history-service${DNS_SUFFIX};
+        rewrite ^/api/history/(.*)$ /$1 break;
+        proxy_pass http://$service:5000;
+    }
+
+    # Each service's /metrics page is for Prometheus on the internal network, not for the public.
+    # A regex location wins over the prefix locations above, so this catches /api/<any>/metrics.
+    location ~ ^/api/[a-z-]+/metrics$ {
+        default_type application/json;
+        return 404 '{"error":"There is no API at this path.","code":"not_found"}';
+    }
+
+    # Any other /api/... path doesn't belong to a service
+    location /api/ {
+        default_type application/json;
+        return 404 '{"error":"There is no API at this path.","code":"not_found"}';
+    }
+
+    # A stopped or missing service becomes a clear JSON error the page can show
+    error_page 502 503 504 = @service_down;
+    location @service_down {
+        default_type application/json;
+        return 503 '{"error":"This service is not running right now.","code":"service_unavailable"}';
+    }
+}

@@ -1,0 +1,20 @@
+# Lets Kustomize (and Argo CD) use this folder as a base: see deploy/overlays/ghcr.
+# It is named "Kustomization" without an extension on purpose: "kubectl apply -f k8s/" only reads
+# *.yaml files, so it keeps working exactly as before and simply ignores this file.
+# The optional extras (k8s/extras) are not part of the base.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - 00-namespace.yaml
+  - 01-config.yaml
+  - 02-database.yaml
+  - 03-cache.yaml
+  - 10-calc-service.yaml
+  - 11-converter-service.yaml
+  - 12-finance-service.yaml
+  - 13-student-service.yaml
+  - 14-history-service.yaml
+  - 15-math-service.yaml
+  - 16-matrix-service.yaml
+  - 17-solver-service.yaml
+  - 20-gateway.yaml

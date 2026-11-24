@@ -1,0 +1,63 @@
+# matrix-service: matrices with exact fractions, and 3D vectors
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: matrix-service
+  namespace: calc-suite
+  labels:
+    app: matrix-service
+    app.kubernetes.io/part-of: calculator-suite
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: matrix-service
+  template:
+    metadata:
+      labels:
+        app: matrix-service
+        app.kubernetes.io/part-of: calculator-suite
+    spec:
+      enableServiceLinks: false   # no automatic SERVICE_PORT=tcp://... variables; config comes from app-config
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+      containers:
+        - name: matrix-service
+          image: calculator-app/matrix-service:3.2
+          imagePullPolicy: Never          # use the image built locally by "docker compose build"
+          ports:
+            - name: http
+              containerPort: 5000
+          envFrom:
+            - configMapRef:
+                name: app-config
+          readinessProbe:                 # only send traffic once this answers
+            httpGet: {path: /health, port: http}
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:                  # restart the container if this stops answering
+            httpGet: {path: /health, port: http}
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {cpu: 500m, memory: 256Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: matrix-service
+  namespace: calc-suite
+  labels:
+    app: matrix-service
+spec:
+  selector:
+    app: matrix-service
+  ports:
+    - name: http
+      port: 5000
+      targetPort: http

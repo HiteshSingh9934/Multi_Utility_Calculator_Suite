@@ -1,0 +1,64 @@
+# math-service: scientific calculator, graphs, 3D graphs, calculus, statistics and 3D shapes.
+# Uses the Redis cache (03-cache.yaml) for graphs; works without it, just slower.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: math-service
+  namespace: calc-suite
+  labels:
+    app: math-service
+    app.kubernetes.io/part-of: calculator-suite
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: math-service
+  template:
+    metadata:
+      labels:
+        app: math-service
+        app.kubernetes.io/part-of: calculator-suite
+    spec:
+      enableServiceLinks: false   # no automatic SERVICE_PORT=tcp://... variables; config comes from app-config
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+      containers:
+        - name: math-service
+          image: calculator-app/math-service:3.2
+          imagePullPolicy: Never          # use the image built locally by "docker compose build"
+          ports:
+            - name: http
+              containerPort: 5000
+          envFrom:
+            - configMapRef:
+                name: app-config
+          readinessProbe:                 # only send traffic once this answers
+            httpGet: {path: /ready, port: http}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:                  # restart the container if this stops answering
+            httpGet: {path: /health, port: http}
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: "1", memory: 512Mi}   # NumPy and SymPy need more room
+          securityContext:
+            allowPrivilegeEscalation: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: math-service
+  namespace: calc-suite
+  labels:
+    app: math-service
+spec:
+  selector:
+    app: math-service
+  ports:
+    - name: http
+      port: 5000
+      targetPort: http

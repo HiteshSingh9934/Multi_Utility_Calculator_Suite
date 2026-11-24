@@ -1,0 +1,64 @@
+# solver-service: step-by-step solutions (derivatives, integrals, equations, matrices, EMI, GST) and /ask,
+# which reads a question in plain English and calls the other services. Needs no database or cache.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: solver-service
+  namespace: calc-suite
+  labels:
+    app: solver-service
+    app.kubernetes.io/part-of: calculator-suite
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: solver-service
+  template:
+    metadata:
+      labels:
+        app: solver-service
+        app.kubernetes.io/part-of: calculator-suite
+    spec:
+      enableServiceLinks: false   # no automatic SERVICE_PORT=tcp://... variables; config comes from app-config
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+      containers:
+        - name: solver-service
+          image: calculator-app/solver-service:3.2
+          imagePullPolicy: Never          # use the image built locally by "docker compose build"
+          ports:
+            - name: http
+              containerPort: 5000
+          envFrom:
+            - configMapRef:
+                name: app-config
+          readinessProbe:                 # only send traffic once this answers
+            httpGet: {path: /health, port: http}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:                  # restart the container if this stops answering
+            httpGet: {path: /health, port: http}
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: "1", memory: 512Mi}   # SymPy needs room, like math-service
+          securityContext:
+            allowPrivilegeEscalation: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: solver-service
+  namespace: calc-suite
+  labels:
+    app: solver-service
+spec:
+  selector:
+    app: solver-service
+  ports:
+    - name: http
+      port: 5000
+      targetPort: http
