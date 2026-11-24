@@ -9,7 +9,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/OWNER/REPOSITORY.git
+    repoURL: https://github.com/HiteshSingh9934/Multi_Utility_Calculator_Suite.git
     targetRevision: main
     path: deploy/overlays/ghcr
   destination:

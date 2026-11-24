@@ -9,32 +9,32 @@ resources:
   - ../../../k8s
 images:
   - name: calculator-app/gateway
-    newName: ghcr.io/OWNER/calculator-app/gateway
-    newTag: "3.2"
+    newName: ghcr.io/hiteshsingh9934/calculator-app/gateway
+    newTag: sha-c871e45
   - name: calculator-app/calc-service
-    newName: ghcr.io/OWNER/calculator-app/calc-service
-    newTag: "3.2"
+    newName: ghcr.io/hiteshsingh9934/calculator-app/calc-service
+    newTag: sha-c871e45
   - name: calculator-app/converter-service
-    newName: ghcr.io/OWNER/calculator-app/converter-service
-    newTag: "3.2"
+    newName: ghcr.io/hiteshsingh9934/calculator-app/converter-service
+    newTag: sha-c871e45
   - name: calculator-app/finance-service
-    newName: ghcr.io/OWNER/calculator-app/finance-service
-    newTag: "3.2"
+    newName: ghcr.io/hiteshsingh9934/calculator-app/finance-service
+    newTag: sha-c871e45
   - name: calculator-app/student-service
-    newName: ghcr.io/OWNER/calculator-app/student-service
-    newTag: "3.2"
+    newName: ghcr.io/hiteshsingh9934/calculator-app/student-service
+    newTag: sha-c871e45
   - name: calculator-app/math-service
-    newName: ghcr.io/OWNER/calculator-app/math-service
-    newTag: "3.2"
+    newName: ghcr.io/hiteshsingh9934/calculator-app/math-service
+    newTag: sha-c871e45
   - name: calculator-app/matrix-service
-    newName: ghcr.io/OWNER/calculator-app/matrix-service
-    newTag: "3.2"
+    newName: ghcr.io/hiteshsingh9934/calculator-app/matrix-service
+    newTag: sha-c871e45
   - name: calculator-app/solver-service
-    newName: ghcr.io/OWNER/calculator-app/solver-service
-    newTag: "3.2"
+    newName: ghcr.io/hiteshsingh9934/calculator-app/solver-service
+    newTag: sha-c871e45
   - name: calculator-app/history-service
-    newName: ghcr.io/OWNER/calculator-app/history-service
-    newTag: "3.2"
+    newName: ghcr.io/hiteshsingh9934/calculator-app/history-service
+    newTag: sha-c871e45
 patches:
   # k8s/ says "imagePullPolicy: Never" (use the locally built image). A registry image must be pulled.
   - target:
